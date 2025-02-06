@@ -3,6 +3,7 @@ import json
 import csv
 from datetime import datetime
 import os
+import re
 
 """
 Author: Majeks Software LLC
@@ -18,9 +19,10 @@ class SEOBlogger():
    def __init__(self): #initialize openAI API client
       self.apiKey = os.getenv("API_KEY")
       # print(self.apiKey)
-      if (self.apiKey == None): self.apiKey = "YOUR_API_KEY"
-      self.client = OpenAI(api_key=self.apiKey)      
-
+      if (self.apiKey == None): 
+        self.apiKey = "YOUR_API_KEY"
+      self.client = OpenAI(api_key=self.apiKey)    
+      self.now = datetime.now().strftime("%m-%d-%Y")
 
   
    def generateBlogTopics(self, client_data: list): #Generate a List of Blog Topics Based on the tentative_blogging_schedule.csv File. 
@@ -52,15 +54,46 @@ class SEOBlogger():
           else:
             client_data[index]['Previous Topics'] = f'{client_data[index]['Previous Topics']}|{current_topic}'
 
-          blogTopics.append({'businessName': row["Business Name"], 'businessType': row["Business Type"], 'seoLocation': row["Target Location"], 'blogTopic': f'blogTopic{num}'})
+          blogTopics.append({'businessName': row["Business Name"], 'businessType': row["Business Type"], 'seoLocation': row["Target Location"], 'blogTopic': re.sub(r"[\\/:*?\"<>|]", "" , current_topic)})
         
       return blogTopics,client_data
    
-   def generateBlogs(self, blogTopics):
-      now = datetime.now()
-      now = now.strftime("%m-%d-%Y")
+   def generateBlogJson(self, blogTopic):
+      jsonTopic = []
+      prompt = (f'You are an SEO Specialist tasked on improving a {blogTopic["businessType"]}\'s Website SEO. '+
+                f'The Business Name is {blogTopic["businessName"]}, focusing on improving the website SEO for {blogTopic["seoLocation"]}. '+
+                f'Write a prompt that can be used to generate a 800-1000 word, Long-Form, blog to improve {blogTopic["businessName"]}\'s search engine ranking. '+
+                f'The topic of this blog will be {blogTopic["blogTopic"]}. Include headers for the sections to be discussed in this blog. '+
+                f'The prompt should be formatted as a json. The Layout should be as such: ' + 
+                "{'businessName': '<businessName>', " +
+                "'seoLocation': '<seoLocation City, State>', " +
+                "'blogTopic': '<blogTopic>', " +
+                "'meta-title': '<meta-title>', " +
+                "'meta-desc': '<meta-description>'," + 
+                "'Discussion': [{'header2-item': '<Topic of header 2 Section>', header2-subjects: ['subject1','subject2','Subject3',...]}]} "+
+                f'Discussions section should include 6-8 or more headers not including an introduction, conclusion and "Why Choose {blogTopic["businessName"]}" section. '
+                )
+      
+      if self.apiKey != "Your_API_Key":
+        response = self.client.chat.completions.create(
+          model="gpt-4o-mini",
+          store=True,
+          messages=[
+            {"role": "developer",
+            "content": prompt
+            }
+          ],
+          response_format={"type": "json_object"}
+        )
+      jsonTopic = response.choices[0].message.content
+      print(jsonTopic)
 
-      folder = f'{str(now)}_blogs'
+      return jsonTopic
+   
+
+   def generateBlogs(self, blogTopics):
+      
+      folder = f'{str(self.now)}_blogs'
       os.makedirs(folder, exist_ok=True)
 
       for i in range(len(blogTopics)):
@@ -106,7 +139,7 @@ class SEOBlogger():
 # )
 
 # json_content = response.choices[0].message.content
-# print(json_content)
+
 
 # if isinstance(json_content, str):
 #     json_data = json.loads(json_content)
@@ -118,21 +151,13 @@ class SEOBlogger():
 
 
 
-# print(f'JSON response saved as {json_name}')
+
 # json_name = "openai_response.json"
 # with open(json_name, 'r') as json_content:
 #     json_data = json.load(json_content)
 # print(json_data)
 
 
-# for topic in range(len(json_data['blogTopics'])):
-#     print(f'Topic {topic}\n---------')
-#     print(f'Title: {json_data['blogTopics'][topic]["topicTitle"]}')
-#     print(f'MetaTitle: {json_data['blogTopics'][topic]["topic_metaTitle"]}')
-#     print(f'MetaDescription: {json_data['blogTopics'][topic]["topic_metaDescription"]}')
-#     print("---------\n")
-
-# print(json_data['blogTopics'][0])
 
 # json_useCase = json_data['blogTopics'][0]
 
@@ -151,7 +176,9 @@ class SEOBlogger():
 if __name__ == "__main__":
   # openAI_client = OpenAI( api_key="Your_API_Key")
 
-  client_details = "tentative_blogging_schedule.csv"
+  # client_details = "tentative_blogging_schedule.csv"
+  client_details = "tentative_blogging_schedule_test.csv"
+  
   client_data = []
   with open(client_details, newline='', encoding='utf-8') as file:
      reader = csv.DictReader(file)
@@ -166,8 +193,27 @@ if __name__ == "__main__":
 
   seoBlogger = SEOBlogger()
   blogTopics,client_data = seoBlogger.generateBlogTopics(client_data)
-  print(client_data)
-  seoBlogger.generateBlogs(blogTopics)
-  # print(blogTopics)
+  with open(f'{seoBlogger.now}_blogTopics.csv', mode="w", newline="") as file:
+
+     fieldnames = ["businessName", "businessType", "seoLocation", "blogTopic" ]
+     writer = csv.DictWriter(file, fieldnames=fieldnames)
+     writer.writeheader()
+     writer.writerows(blogTopics)
+
+  with open(f'{seoBlogger.now}_client_data.csv', mode="w", newline="") as file:
+     fieldnames = ["Business Name","Business Type","Target Location","Number of Blogs","Previous Topics","Similar Topics"]
+     writer = csv.DictWriter(file, fieldnames=fieldnames)
+     writer.writeheader()
+     writer.writerows(client_data)
+
+  print(blogTopics)
+  json_list = []
+  for blogTopic in blogTopics:
+    seoBlogger.generateBlogs(json.loads(seoBlogger.generateBlogJson(blogTopic)))
+  
+
+  # print(client_data)
+  #seoBlogger.generateBlogs(blogTopics)
+  
 
   
