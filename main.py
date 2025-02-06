@@ -47,8 +47,7 @@ class SEOBlogger():
             )
             current_topic = response.choices[0].message.content
 
-          print(current_topic)
-          #current_topic = f'blogTopic{num}'
+          # print(current_topic)
           if len(client_data[index]['Previous Topics']) == 0:
              client_data[index]['Previous Topics'] = current_topic
           else:
@@ -79,105 +78,58 @@ class SEOBlogger():
           model="gpt-4o-mini",
           store=True,
           messages=[
-            {"role": "developer",
+            {"role": "system",
+            "content": "You are an AI assistant that responds in JSON format."
+            },
+            {"role": "user",
             "content": prompt
             }
           ],
           response_format={"type": "json_object"}
         )
       jsonTopic = response.choices[0].message.content
-      print(jsonTopic)
 
       return jsonTopic
    
 
-   def generateBlogs(self, blogTopics):
+   def generateBlogs(self, blogTopic, json):
       
       folder = f'{str(self.now)}_blogs'
       os.makedirs(folder, exist_ok=True)
 
-      for i in range(len(blogTopics)):
-        businessFolder = os.path.join(folder, blogTopics[i]["businessName"])
-        os.makedirs(businessFolder, exist_ok=True)
-        file_path = os.path.join(businessFolder, f'{blogTopics[i]["blogTopic"]}.txt')
+      businessFolder = os.path.join(folder, blogTopic["businessName"])
+      os.makedirs(businessFolder, exist_ok=True)
+      file_path = os.path.join(businessFolder, f'{blogTopic["blogTopic"]}.txt')
 
-        # response = self.client.chat.completions.create(
-        #   model = "gpt-4o-mini",
-        #   store=True,
-        #   messages=[
-        #       {"role": "developer",
-        #       "content": f''
-        #     }
-        #   ],
-        #   response_format={"type": "json_object"}
-        # )
+      response = self.client.chat.completions.create(
+        model = "gpt-4o-mini",
+        store=True,
+        messages=[
+            {"role": "system",
+            "content": "You are an AI SEO Specialist that Returns the Response in HTML"
+          },
+          {"role": "user",
+            "content": (f'Write me the full Blog Given the prompt.(Not a Structured Outline) The Blog MUST be 800-1000 Words: {json}' + 
+                        f'Do Not include a footer with a "All Rights Reserved". Also do no include the(```html ```) in the content.'+
+                        f'Be sure to focus on Best in practice SEO. ')
+          }
+        ],
+      )
 
-        with open(file_path, "w") as file:
-          file.write(f'{blogTopics[i]["blogTopic"]}')
-          # print(f"File saved at: {file_path}")
+      blog = response.choices[0].message.content
+
+      with open(file_path, "w", encoding="utf-8") as file:
+        file.write(f'{blog}')
       
       return 
-# response = client.chat.completions.create(
-#   model="gpt-4o-mini",
-#   store=True,
-#   messages=[
-#     {"role": "developer",
-#      "content": "You are an SEO Specialist trying to improve a Software companies Website SEO. The company name is \'Majeks Software\'. Please provide me a List of 5 Blog Topics to improve their websites search engine ranking. Blog Topic should be formatted as a json file. Each Topic should include the topic title, topic_metaTitle, and topic_metaDescription."
-#     }
-#   ],
-#   response_format={"type": "json_object"}
-# )
-
-# completion = client.chat.completions.create(
-#   model="gpt-4o-mini",
-#   store=True,
-#   messages=[
-#     {"role": "user",
-#      "content": "Write me the full Blog Given the prompt.(Not a Structured Outline) The Blog MUST be 400 Words. Return the Blog in <HTML> Format: \"topic_title\": \"The Importance of Cybersecurity in Software Development\", \"topic_metaTitle\": \"Cybersecurity in Software Development | Majeks Software\", \"topic_metaDescription\": \"Understand the critical role cybersecurity plays in software development. Majeks Software discusses best practices and strategies to secure your applications.\""
-#     }
-#   ]
-# )
-
-# json_content = response.choices[0].message.content
 
 
-# if isinstance(json_content, str):
-#     json_data = json.loads(json_content)
-
-# json_name = "openai_response.json"
-
-# with open(json_name , 'w') as json_file:
-#     json.dump(json_data, json_file, indent=4)
-
-
-
-
-# json_name = "openai_response.json"
-# with open(json_name, 'r') as json_content:
-#     json_data = json.load(json_content)
-# print(json_data)
-
-
-
-# json_useCase = json_data['blogTopics'][0]
-
-# completion = client.chat.completions.create(
-#   model="gpt-4o-mini",
-#   store=True,
-#   messages=[
-#     {"role": "user",
-#      "content": f"Write me the full Blog Given the prompt.(Not a Structured Outline) The Blog MUST be 400 Words. Return the Blog in <HTML> Format: {json_useCase}"
-#     }
-#   ]
-# )
-
-# print(completion.choices[0].message.content)
 
 if __name__ == "__main__":
-  # openAI_client = OpenAI( api_key="Your_API_Key")
 
-  # client_details = "tentative_blogging_schedule.csv"
-  client_details = "tentative_blogging_schedule_test.csv"
+  # client_details = "client_data_defaults.csv"
+  client_details = "client_data_test.csv"
+  # client_details = "client_data.csv"
   
   client_data = []
   with open(client_details, newline='', encoding='utf-8') as file:
@@ -186,13 +138,10 @@ if __name__ == "__main__":
         client_data.append(dict(row))
 
 
-  # json_file = "client_details.json"
-  # # print(client_data)
-  # with open(json_file, "w", encoding="utf-8") as jsonf:
-  #   json.dump(client_data, jsonf, indent=4)  # Pretty print with indentation
-
   seoBlogger = SEOBlogger()
   blogTopics,client_data = seoBlogger.generateBlogTopics(client_data)
+
+  # Create Tenative Blogging Schedule for Current Cycle
   with open(f'{seoBlogger.now}_blogTopics.csv', mode="w", newline="") as file:
 
      fieldnames = ["businessName", "businessType", "seoLocation", "blogTopic" ]
@@ -200,19 +149,17 @@ if __name__ == "__main__":
      writer.writeheader()
      writer.writerows(blogTopics)
 
-  with open(f'{seoBlogger.now}_client_data.csv', mode="w", newline="") as file:
+  # Store Client Blogging Details Based on Current Cycle
+  with open(f'client_data.csv', mode="w", newline="") as file:
      fieldnames = ["Business Name","Business Type","Target Location","Number of Blogs","Previous Topics","Similar Topics"]
      writer = csv.DictWriter(file, fieldnames=fieldnames)
      writer.writeheader()
      writer.writerows(client_data)
 
-  print(blogTopics)
   json_list = []
   for blogTopic in blogTopics:
-    seoBlogger.generateBlogs(json.loads(seoBlogger.generateBlogJson(blogTopic)))
+    seoBlogger.generateBlogs(blogTopic, json.loads(seoBlogger.generateBlogJson(blogTopic)))
   
-
-  # print(client_data)
   #seoBlogger.generateBlogs(blogTopics)
   
 
