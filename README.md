@@ -46,7 +46,7 @@
 
 | Business Name | Business Type | Target Location | Number of Blogs | Previous Topics | Similar Topics |
 |---------------|----------------|------------------|------------------|------------------|------------------|
-| MajeksSoftwareLLC | Cloud R&D | Santa Ana, CA | 1 | Why AWS Is the Best Tool for your Cloud Infrastructure | `AWS Cloudformation: Why Use Infrastructure as Code | EC2 vs Lambda: What Should You Use` |for Your Application` |
+| MajeksSoftwareLLC | Cloud R&D | Santa Ana, CA | 1 | "Why AWS Is the Best Tool for your Cloud Infrastructure" | AWS Cloudformation: Why Use Infrastructure as Code \| EC2 vs Lambda: What Should You Use for Your Application |
 
 - **Previous Topics**: Pipe-separated string of old topics (e.g., `BlogA | BlogB`)
 - **Similar Topics**: Ideas to pull inspiration from when prompting
