@@ -1,0 +1,7 @@
+blogZipFiles
+clientData
+generatedFiles
+.env
+client_data.csv
+encryptedClientName.py
+majeksAutoBlogger.py

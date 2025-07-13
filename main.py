@@ -11,16 +11,14 @@ Developer: Sami Halwani
 Project Name: SEO Blogger
 Description: The Purpose of this application is to create an automated blogging tool using the OpenAI API. 
 
-
-
 """
 class SEOBlogger():
    
    def __init__(self): #initialize openAI API client
-      self.apiKey = os.getenv("API_KEY")
+      self.apiKey = os.environ.get("API_KEY")
       # print(self.apiKey)
       if (self.apiKey == None): 
-        self.apiKey = "YOUR_API_KEY"
+        self.apiKey = "YOUR_API_KEY" # For test purposes
       self.client = OpenAI(api_key=self.apiKey)    
       self.now = datetime.now().strftime("%m-%d-%Y")
 
@@ -128,8 +126,8 @@ class SEOBlogger():
 if __name__ == "__main__":
 
   # client_details = "client_data_defaults.csv"
-  client_details = "client_data_test.csv"
-  # client_details = "client_data.csv"
+  # client_details = "client_data_example.csv"
+  client_details = "client_data.csv"
   
   client_data = []
   with open(client_details, newline='', encoding='utf-8') as file:
@@ -150,7 +148,7 @@ if __name__ == "__main__":
      writer.writerows(blogTopics)
 
   # Store Client Blogging Details Based on Current Cycle
-  with open(f'client_data.csv', mode="w", newline="") as file:
+  with open(f'{client_details}', mode="w", newline="") as file:
      fieldnames = ["Business Name","Business Type","Target Location","Number of Blogs","Previous Topics","Similar Topics"]
      writer = csv.DictWriter(file, fieldnames=fieldnames)
      writer.writeheader()
