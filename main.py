@@ -16,7 +16,7 @@ class SEOBlogger():
    
    def __init__(self): #initialize openAI API client
       self.apiKey = os.environ.get("API_KEY")
-      # print(self.apiKey)
+      # print(f"Your API Key {self.apiKey}")
       if (self.apiKey == None): 
         self.apiKey = "YOUR_API_KEY" # For test purposes
       self.client = OpenAI(api_key=self.apiKey)    
@@ -127,9 +127,12 @@ if __name__ == "__main__":
 
   # client_details = "client_data_defaults.csv"
   # client_details = "client_data_example.csv"
-  client_details = "client_data.csv"
+  client_details = os.environ.get("CLIENT_DATA_FILE")
+  #client_details = "client_data.csv"
+  
   
   client_data = []
+  print(f'Loading Client Details...')
   with open(client_details, newline='', encoding='utf-8') as file:
      reader = csv.DictReader(file)
      for row in reader:
@@ -137,6 +140,7 @@ if __name__ == "__main__":
 
 
   seoBlogger = SEOBlogger()
+  print(f'Generating Blog Topics for {len(client_data)} Clients')
   blogTopics,client_data = seoBlogger.generateBlogTopics(client_data)
 
   # Create Tenative Blogging Schedule for Current Cycle
@@ -146,6 +150,7 @@ if __name__ == "__main__":
      writer = csv.DictWriter(file, fieldnames=fieldnames)
      writer.writeheader()
      writer.writerows(blogTopics)
+  print(f'Tentative Blogging Schedule Generated -- {seoBlogger.now}_blogTopics.csv')
 
   # Store Client Blogging Details Based on Current Cycle
   with open(f'{client_details}', mode="w", newline="") as file:
@@ -153,10 +158,14 @@ if __name__ == "__main__":
      writer = csv.DictWriter(file, fieldnames=fieldnames)
      writer.writeheader()
      writer.writerows(client_data)
+  print(f'Client Details Updated...')
 
   json_list = []
   for blogTopic in blogTopics:
+    print(f'Generating Blog for {blogTopic["businessName"]} on the topic of {blogTopic["blogTopic"]}')
     seoBlogger.generateBlogs(blogTopic, json.loads(seoBlogger.generateBlogJson(blogTopic)))
+  
+  print(f'Blog Generation Complete -- {seoBlogger.now}_blogs')
   
   #seoBlogger.generateBlogs(blogTopics)
   
